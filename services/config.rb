@@ -18,10 +18,10 @@ coreo_aws_rule "ec2-ip-address-whitelisted" do
         range as ip_ranges
       }
       query(func: (%<security_group_filter>s) @cascade {
-        %<default_predicates>
+        %<default_predicates>s
         group_id
         relates_to @filter(uid(ranges) AND eq(val(range), "[{:cidr_ip=>\"1.0.0.0/32\"}]")) {{
-          %<default_predicates>
+          %<default_predicates>s
         }
       }
     }
