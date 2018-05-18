@@ -14,7 +14,7 @@ coreo_aws_rule "ec2-ip-address-whitelisted" do
     id_map "object.security_groups.group_id"
     meta_rule_query <<~QUERY
     {
-      ranges as var(func: %<ip_permission_filter>) {
+      ranges as var(func: %<ip_permission_filter>s) {
         range as ip_ranges
       }
       query(func: (%<security_group_filter>s) @cascade {
