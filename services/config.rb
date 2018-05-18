@@ -28,3 +28,11 @@ coreo_aws_rule "ec2-ip-address-whitelisted" do
     QUERY
     meta_rule_node_triggers ({'security_group' => [], 'ip_permission' => ['ip_ranges']})
 end
+
+coreo_aws_rule_runner "advise-ec2" do
+  service :ec2
+  action :run
+  rules (${AUDIT_AWS_EC2_ALERT_LIST})
+  regions ${AUDIT_AWS_EC2_REGIONS}
+  filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
+end
