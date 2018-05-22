@@ -20,7 +20,7 @@ coreo_aws_rule "ec2-ip-address-whitelisted" do
       query(func: %<security_group_filter>s) @cascade {
         %<default_predicates>s
         group_id
-        relates_to @filter(uid(ranges) AND eq(val(range), "[{:cidr_ip=>\"1.0.0.0/32\"}]")) {
+        relates_to @filter(uid(ranges) AND eq(val(range), "[{:cidr_ip=>\\\"1.0.0.0/32\\\"}]")) {
           %<default_predicates>s
         }
       }
@@ -55,7 +55,7 @@ coreo_aws_rule "s3-allusers-read" do
   id_map "modifiers.bucket"
   meta_rule_query <<~QUERY
   {
-    b as var(func: %<bucket_filter>s)  {
+    b as var(func: %<bucket_filter>s) @cascade {
       ba as relates_to @filter(%<bucket_acl_filter>s) {
         bag as relates_to @filter(%<bucket_acl_grant_filter>s) {
           p as permission
