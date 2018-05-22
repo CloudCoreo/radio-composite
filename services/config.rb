@@ -93,7 +93,7 @@ end
 coreo_aws_rule_runner "advise-s3" do
   service :s3
   action :run
-  regions ["PLAN::region"]
+  regions ${AUDIT_AWS_EC2_REGIONS}
   rules (${AUDIT_AWS_S3_ALERT_LIST})
   filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
 end
