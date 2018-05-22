@@ -10,6 +10,22 @@ variables:
     type: array
     default:
        - s3-allusers-read
+  AUDIT_AWS_RDS_ALERT_LIST:
+    required: false
+    type: array
+    default:
+        - rds-db-instance-unencrypted 
+        - rds-db-snapshot-unencrypted 
+        - rds-short-backup-retention-period 
+        - rds-no-auto-minor-version-upgrade 
+        - rds-db-publicly-accessible 
+    description: "Which rules would you like to run? Possible values are rds-db-instance-unencrypted rds-db-snapshot-unencrypted rds-inventory rds-short-backup-retention-period rds-no-auto-minor-version-upgrade rds-db-publicly-accessible"
+  AUDIT_AWS_RDS_REGIONS:
+    description: "List of AWS regions to check. Default is all regions. Choices are us-east-1"
+    required: true
+    type: array
+    default:
+        - us-east-1
   AUDIT_AWS_EC2_ALERT_LIST:
     required: false
     type: array
