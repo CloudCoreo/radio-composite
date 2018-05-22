@@ -929,3 +929,82 @@ coreo_aws_rule_runner "advise-iam" do
   rules (${AUDIT_AWS_IAM_ALERT_LIST})
   filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
 end
+
+coreo_aws_rule "kms-unused" do
+  action(${AUDIT_AWS_KMS_ALERT_LIST}.include?("kms-unused") ? :define : :nothing)
+  service :user
+  link "http://kb.cloudcoreo.com/mydoc_all-inventory.html"
+  include_violations_in_count false
+  display_name "KMS is unused"
+  description "This rule performs an inventory on all kms objects to determine if KMS is being used as a cryptographic management system. If not, it indicated a system may not be in use."
+  category "Security"
+  suggested_action "None."
+  level "Low"
+  meta_nist_171_id "3.13.10"
+  objectives [""]
+  audit_objects [""]
+  operators [""]
+  raise_when [""]
+  id_map "static.no_op"
+  meta_rule_query <<~QUERY
+  { 
+    query(func: %<key_filter>s) @filter(NOT has(relates_to)) {
+        %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers ({
+          'key' => []
+  })
+end
+
+coreo_aws_rule "kms-key-rotates" do
+  action :define
+  service :kms
+  link "http://kb.cloudcoreo.com/mydoc_kms-key-rotates.html"
+  include_violations_in_count true
+  display_name "Verify rotation for customer created CMKs is enabled"
+  description "AWS Key Management Service (KMS) allows customers to rotate the backing key which is key material stored within the KMS which is tied to the key ID of the Customer Created customer master key (CMK). It is the backing key that is used to perform cryptographic operations such as encryption and decryption. Automated key rotation currently retains all prior backing keys so that decryption of encrypted data can take place transparently."
+  category "Audit"
+  suggested_action "It is recommended that CMK key rotation be enabled."
+  level "Medium"
+  meta_cis_id "2.8"
+  meta_cis_scored "true"
+  meta_cis_level "2"
+  objectives ["keys", "key_rotation_status"]
+  call_modifiers [{}, {:key_id => "object.keys.key_id"}]
+  audit_objects ["", "object.key_rotation_enabled"]
+  operators ["", "=="]
+  raise_when ["", false]
+  id_map "modifiers.key_id"
+  meta_rule_query <<~QUERY
+  { 
+    keys as var(func: %<key_filter>s) @cascade {         
+      keys_rotation as relates_to @filter(has(key_rotation_status)) {
+        kre as key_rotation_enabled
+      }
+    }
+    
+    query(func: uid(keys)) @cascade {
+      %<default_predicates>s
+      relates_to @filter(uid(keys_rotation) AND eq(val(kre), false) ) {
+        %<default_predicates>s
+      }
+    }    
+  }
+  QUERY
+  meta_rule_node_triggers ({
+          'key' => [],
+          'key_rotation_status' => ['key_rotation_enabled']
+  })
+end
+
+
+coreo_aws_rule_runner "advise-kms" do
+  action :run
+  rules ${AUDIT_AWS_KMS_ALERT_LIST}
+  service :kms
+  regions ${AUDIT_AWS_REGIONS}
+  filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
+end
+
