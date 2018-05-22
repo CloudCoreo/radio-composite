@@ -30,49 +30,15 @@ variables:
     required: false
     type: array
     default:
-      - iam-unusediamgroup #
-      - iam-multiple-keys #
-      - iam-root-multiple-keys #
-      - iam-inactive-key-no-rotation #
-      - iam-active-key-no-rotation # cis_id:1.4
-      - iam-missing-password-policy #
-      - iam-passwordreuseprevention # cis_id:1.10
-      - iam-expirepasswords # cis_id:1.11
-      - iam-no-mfa #
-      - iam-root-active-password #
-      - iam-user-attached-policies # cis_id:1.16
-      - iam-password-policy-uppercase # cis_id:1.05
-      - iam-password-policy-lowercase # cis_id:1.06
-      - iam-password-policy-symbol # cis_id:1.07
-      - iam-password-policy-number # cis_id:1.08
-      - iam-password-policy-min-length # cis_id:1.9
-      - iam-cloudbleed-passwords-not-rotated #
-      - iam-support-role # cis_id:1.22
-      - iam-omnipotent-policy # cis_id 1.24
-      - iam-user-password-not-used # not_violation
-      - iam-unused-access # not_violation cis_id:1.3
-      - iam-no-hardware-mfa-root # cis_id:1.14
-      - iam-active-root-user # not_violation cis_id:1.1
-      - iam-mfa-password-holders # not_violation cis_id:1.2
-      - manual-ensure-security-questions # cis_id:1.15
-      - manual-detailed-billing # cis_id:1.17
-      - iam-root-key-access # cis_id:1.12
-      - iam-root-no-mfa # cis_id:1.13
-      - manual-strategic-iam-roles # cis_id:1.18
-      - iam-initialization-access-key # cis_id:1.23
-      - manual-contact-details # cis_id:1.19
-      - manual-security-contact # cis_id:1.20
-      - manual-resource-instance-access # cis_id:1.21
-      - manual-full-privilege-user # cis_id:1.24
-      - manual-appropriate-sns-subscribers # cis_id:3.15 #meta_nist_171_id "3.14.6, 3.14.7"
-      - manual-least-access-routing-tables # cis_id:4.5
-      - manual-obscure-auth-info # meta_nist_171_id "3.5.11"
-      - manual-least-access-routing-tables # cis_id:4.5
-      - manual-maintenance-records #meta_nist_171_id "3.7.1, 3.7.2, 3.7.3"
-      - manual-approved-monitored-maintenance # meta_nist_171_id "3.7.1, 3.7.2, 3.7.3"
-      - manual-component-removal-approval #meta_nist_171_id "3.7.1, 3.7.2, 3.7.3"
-      # this *-is-admin rules require additional privs on the role assigned to cloudcoreo:
-      #        {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["iam:SimulateCustomPolicy","iam:SimulatePrincipalPolicy"],"Resource":["*"]}]}
+      - iam-passwordreuseprevention
+      - iam-expirepasswords
+      - iam-password-policy-uppercase
+      - iam-password-policy-lowercase
+      - iam-password-policy-symbol
+      - iam-password-policy-number
+      - iam-password-policy-min-length
+      - iam-support-role
+      - iam-unusediamgroup
     description: "Which rules would you like to run? Possible values are iam-inventory-users iam-inventory-roles iam-inventory-policies iam-inventory-groups iam-unusediamgroup iam-multiple-keys iam-root-multiple-keys iam-inactive-key-no-rotation iam-active-key-no-rotation iam-missing-password-policy iam-passwordreuseprevention iam-expirepasswords iam-no-mfa iam-root-active-password iam-user-attached-policies iam-password-policy-uppercase iam-password-policy-lowercase iam-password-policy-symbol iam-password-policy-number iam-password-policy-min-length iam-root-access-key-1 iam-root-access-key-2 iam-cloudbleed-passwords-not-rotated iam-support-role iam-user-password-not-used iam-unused-access iam-no-hardware-mfa-root iam-active-root-user iam-mfa-password-holders manual-ensure-security-questions manual-detailed-billing iam-root-key-access iam-root-no-mfa manual-strategic-iam-roles iam-initialization-access-key manual-contact-details manual-security-contact manual-resource-instance-access manual-full-privilege-user manual-appropriate-sns-subscribers manual-least-access-routing-tables iam-user-is-admin iam-instance-role-is-admin"  
   AUDIT_AWS_REGIONS:
     description: "List of AWS regions to check. Default is all regions. Choices are us-east-1,us-east-2,us-west-1,us-west-2,ca-central-1,ap-south-1,ap-northeast-2,ap-southeast-1,ap-southeast-2,ap-northeast-1,eu-central-1,eu-west-1,eu-west-1,sa-east-1"
