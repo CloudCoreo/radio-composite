@@ -33,7 +33,7 @@ coreo_aws_rule_runner "advise-ec2" do
   service :ec2
   action :run
   rules (${AUDIT_AWS_EC2_ALERT_LIST})
-  regions ${AUDIT_AWS_EC2_REGIONS}
+  regions ${AUDIT_AWS_REGIONS}
   filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
 end
 
@@ -93,7 +93,7 @@ end
 coreo_aws_rule_runner "advise-s3" do
   service :s3
   action :run
-  regions ${AUDIT_AWS_EC2_REGIONS}
+  regions ${AUDIT_AWS_REGIONS}
   rules (${AUDIT_AWS_S3_ALERT_LIST})
   filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
 end
@@ -301,6 +301,303 @@ coreo_aws_rule_runner "advise-rds" do
   rules ${AUDIT_AWS_RDS_ALERT_LIST}
   service :rds
   action :run
-  regions ${AUDIT_AWS_RDS_REGIONS}
+  regions ${AUDIT_AWS_REGIONS}
+  filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
+end
+
+coreo_aws_rule "iam-passwordreuseprevention" do
+  action :define
+  service :iam
+  link "http://kb.cloudcoreo.com/mydoc_iam-passwordreuseprevention.html"
+  display_name "Users can reuse old passwords"
+  description "The current password policy doesn't prevent users from reusing their old passwords."
+  category "Access"
+  suggested_action "Configure a strong password policy for your users to ensure that passwords expire, aren't reused, have a certain length, require certain characters, and more."
+  meta_cis_id "1.10"
+  meta_cis_scored "true"
+  meta_cis_level "1"
+  meta_nist_171_id "3.5.8"
+  level "High"
+  objectives ["account_password_policy"]
+  audit_objects ["object.password_policy"]
+  formulas ["include?(password_reuse_prevention)"]
+  operators ["!="]
+  raise_when [true]
+  id_map "static.password_policy"
+  meta_rule_query <<~QUERY
+  { 
+    pp as var(func: has(password_policy)) @filter(NOT has(password_reuse_prevention)) { 
+    }
+  
+    np as var(func: has(password_policy)) @filter( has(password_reuse_prevention)) { 
+       prp as password_reuse_prevention
+    } 
+      
+    ap as var(func: uid(np)) @filter(eq(val(prp), false)) {
+    }
+        
+    query(func: uid(ap, pp)){
+      %<default_predicates>s
+    }
+      
+  }
+  QUERY
+  meta_rule_node_triggers ({
+      'password_policy' => ['password_reuse_prevention']
+  })
+end
+
+coreo_aws_rule "iam-expirepasswords" do
+  action :define
+  service :iam
+  link "http://kb.cloudcoreo.com/mydoc_iam-expirepasswords.html"
+  display_name "Passwords not set to expire"
+  description "The current password policy doesn't require users to regularly change their passwords. User passwords are set to never expire."
+  category "Access"
+  suggested_action "Configure a strong password policy for your users so that passwords expire such that users must change their passwords periodically."
+  meta_cis_id "1.11"
+  meta_cis_scored "true"
+  meta_cis_level "1"
+  level "High"
+  objectives ["account_password_policy"]
+  audit_objects ["object.password_policy.expire_passwords"]
+  operators ["=="]
+  raise_when ["false"]
+  id_map "static.password_policy"
+  meta_rule_query <<~QUERY
+  {
+    pp as var(func: %<password_policy_filter>s ) {
+      is_expired as expire_passwords
+    }
+    query(func: uid(pp)) @filter(eq(val(is_expired), false)) {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers ({
+      'password_policy' => ['expire_passwords']
+  })
+end
+
+coreo_aws_rule "iam-password-policy-uppercase" do
+  action :define
+  service :iam
+  link "http://kb.cloudcoreo.com/mydoc_iam-password-policy-uppercase.html"
+  display_name "Password policy doesn't require an uppercase letter"
+  description "The password policy must require an uppercase letter to meet CIS standards"
+  category "Access"
+  suggested_action "Configure a strong password policy for your users to ensure that passwords expire, aren't reused, have a certain length, require certain characters, and more."
+  meta_cis_id "1.5"
+  meta_cis_scored "true"
+  meta_cis_level "1"
+  meta_nist_171_id "3.5.7"
+  level "Medium"
+  objectives ["account_password_policy"]
+  id_map "static.password_policy"
+  audit_objects ["object.password_policy.require_uppercase_characters"]
+  operators ["=="]
+  raise_when [false]
+  meta_rule_query <<~QUERY
+  {
+    pp as var(func: %<password_policy_filter>s ) {
+      is_uppercase as require_uppercase_characters
+    }
+    query(func: uid(pp)) @filter(eq(val(is_uppercase), false)) {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers ({
+      'password_policy' => ['require_uppercase_characters']
+  })
+end
+    
+coreo_aws_rule "iam-password-policy-lowercase" do
+  action :define
+  service :iam
+  link "http://kb.cloudcoreo.com/mydoc_iam-password-policy-lowercase.html"
+  display_name "Password policy doesn't require an lowercase letter"
+  description "The password policy must require an lowercase letter to meet CIS standards"
+  category "Access"
+  suggested_action "Configure a strong password policy for your users to ensure that passwords expire, aren't reused, have a certain length, require certain characters, and more."
+  meta_cis_id "1.6"
+  meta_cis_scored "true"
+  meta_cis_level "1"
+  level "Medium"
+  meta_nist_171_id "3.5.7"
+  objectives ["account_password_policy"]
+  id_map "static.password_policy"
+  audit_objects ["object.password_policy.require_lowercase_characters"]
+  operators ["=="]
+  raise_when [false]
+  meta_rule_query <<~QUERY
+  {
+    pp as var(func: %<password_policy_filter>s ) {
+      is_lowercase as require_lowercase_characters
+    }
+    query(func: uid(pp)) @filter(eq(val(is_lowercase), false)) {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers ({
+      'password_policy' => ['require_lowercase_characters']
+  })
+end
+
+coreo_aws_rule "iam-password-policy-symbol" do
+  action :define
+  service :iam
+  link "http://kb.cloudcoreo.com/mydoc_iam-password-policy-symbol.html"
+  display_name "Password policy doesn't require a symbol"
+  description "The password policy must require a symbol to meet CIS standards"
+  category "Access"
+  suggested_action "Configure a strong password policy for your users to ensure that passwords expire, aren't reused, have a certain length, require certain characters, and more."
+  meta_cis_id "1.7"
+  meta_cis_scored "true"
+  meta_cis_level "1"
+  level "Medium"
+  meta_nist_171_id "3.5.7"
+  objectives ["account_password_policy"]
+  id_map "static.password_policy"
+  audit_objects ["object.password_policy.require_symbols"]
+  operators ["=="]
+  raise_when [false]
+  meta_rule_query <<~QUERY
+  {
+    pp as var(func: %<password_policy_filter>s ) {
+      is_symbol as require_symbols
+    }
+    query(func: uid(pp)) @filter(eq(val(is_symbol), false)) {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers ({
+      'password_policy' => ['require_symbols']
+  })
+end
+
+coreo_aws_rule "iam-password-policy-number" do
+  action :define
+  service :iam
+  link "http://kb.cloudcoreo.com/mydoc_iam-password-policy-number.html"
+  display_name "Password policy doesn't require a number"
+  description "The password policy must require a number to meet CIS standards"
+  category "Access"
+  suggested_action "Configure a strong password policy for your users to ensure that passwords expire, aren't reused, have a certain length, require certain characters, and more."
+  meta_cis_id "1.8"
+  meta_cis_scored "true"
+  meta_cis_level "1"
+  level "Medium"
+  meta_nist_171_id "3.5.7"
+  objectives ["account_password_policy"]
+  id_map "static.password_policy"
+  audit_objects ["object.password_policy.require_numbers"]
+  operators ["=="]
+  raise_when [false]
+  meta_rule_query <<~QUERY
+  {
+    pp as var(func: %<password_policy_filter>s ) {
+      is_number as require_numbers
+    }
+    query(func: uid(pp)) @filter(eq(val(is_number), false)) {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers ({
+      'password_policy' => ['require_numbers']
+  })
+end
+
+coreo_aws_rule "iam-password-policy-min-length" do
+  action :define
+  service :iam
+  link "http://kb.cloudcoreo.com/mydoc_iam-password-policy-min-length.html"
+  display_name "Password policy doesn't require a minimum length of 14 characters"
+  description "The password policy must require a minimum length of 14 characters to meet CIS standards"
+  category "Access"
+  suggested_action "Configure a strong password policy for your users to ensure that passwords expire, aren't reused, have a certain length, require certain characters, and more."
+  meta_cis_id "1.9"
+  meta_cis_scored "true"
+  meta_cis_level "1"
+  level "Medium"
+  meta_nist_171_id "3.5.7"
+  objectives ["account_password_policy"]
+  id_map "static.password_policy"
+  audit_objects ["object.password_policy.minimum_password_length"]
+  operators ["<"]
+  raise_when [14]
+  meta_rule_query <<~QUERY
+  {
+    pp as var(func: %<password_policy_filter>s ) {
+      is_min_length as minimum_password_length
+    }
+    query(func: uid(pp)) @filter( lt(val(is_min_length), 14) ) {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers ({
+      'password_policy' => ['minimum_password_length']
+  })
+end
+
+coreo_aws_rule "iam-cloudbleed-passwords-not-rotated" do
+  action :define
+  service :iam
+  display_name "User may have been exposed to the CloudBleed issue"
+  description "Cloudbleed is the latest internet bug that puts users private information in jeopardy. News of the bug broke late on Feb 24, 2017,"
+  link "http://kb.cloudcoreo.com/mydoc_iam-cloudbleed-password-not-rotated.html"
+  category "Security"
+  suggested_action "Users should be asked to rotate their passwords after February 25, 2017"
+  level "High"
+  id_map "object.content.user"
+  objectives ["credential_report", "credential_report", "credential_report"]
+  audit_objects ["object.content.password_last_changed", "object.content.password_last_changed", "object.content.password_last_changed"]
+  operators ["!=", "!=", "<"]
+  raise_when ["not_supported", "N/A", "2017-02-21 16:00:00 -0800"]
+end
+
+coreo_aws_rule "iam-support-role" do
+  action :define
+  service :iam
+  link "http://kb.cloudcoreo.com/mydoc_iam-support-role.html"
+  display_name "IAM Support Role"
+  description "Ensure a support role exists to manage incidents"
+  category "Security"
+  suggested_action "Create a support role"
+  meta_cis_id "1.22"
+  meta_cis_scored "true"
+  meta_cis_level "1"
+  level "Low"
+  meta_nist_171_id "3.4.6"
+  objectives ["", "policies"]
+  audit_objects ["object.policies.policy_name", "object.policies.attachment_count"]
+  operators ["==", ">"]
+  raise_when ["AWSSupportAccess", 0]
+  id_map "object.policies.policy_name"
+  meta_rule_query <<~QUERY
+  {
+    pf as var(func: %<policy_filter>s ) {
+      pfa as attachment_count
+      pfn as policy_name
+    }
+    query(func: uid(pf)) @filter( gt( val(pfa), 0) AND eq(val(pfn), AWSSupportAccess") ) {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers ({
+      'policy' => ['attachment_count','policy_name']
+  })
+end
+
+coreo_aws_rule_runner "advise-iam" do
+  service :iam
+  action :run
+  regions ${AUDIT_AWS_REGIONS}
+  rules (${AUDIT_AWS_IAM_ALERT_LIST})
   filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
 end
