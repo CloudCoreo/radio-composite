@@ -14,7 +14,7 @@ coreo_aws_rule "ec2-ip-address-whitelisted" do
     id_map "object.security_groups.group_id"
     meta_rule_query <<~QUERY
     {
-      ranges as var(func: %<ip_permission_filter>s) {
+      ranges as var(func: %<ip_permission_filter>s) @cascade {
         range as ip_ranges
       }
       query(func: %<security_group_filter>s) @cascade {
@@ -35,6 +35,320 @@ coreo_aws_rule_runner "advise-ec2" do
   rules (${AUDIT_AWS_EC2_ALERT_LIST})
   regions ${AUDIT_AWS_REGIONS}
   filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
+end
+
+coreo_aws_rule "s3-allusers-full-control" do
+  action :define
+  service :s3
+  link "http://kb.cloudcoreo.com/mydoc_s3-allusers-full-control.html"
+  display_name "All users can do anything with the affected bucket"
+  description "Bucket has permissions (ACL) which let all users do anything with the bucket and/or it's contents."
+  category "Dataloss"
+  suggested_action "Remove the entry from the bucket permissions that allows everyone to have full control."
+  level "High"
+  meta_nist_171_id "3.1.22, 3.1.3"
+  objectives     ["buckets", "bucket_acl", "bucket_acl"]
+  call_modifiers [{}, {:bucket => "buckets.name"}, {}]
+  audit_objects ["", "object.grants.grantee.uri", "object.grants.permission"]
+  operators     ["", "=~", "=~"]
+  raise_when    ["", /AllUsers/i, /\bfull_control\b/i]
+  id_map "modifiers.bucket"
+  meta_rule_query <<~QUERY
+  {
+    b as var(func: %<bucket_filter>s)  @cascade {
+      ba as relates_to @filter(%<bucket_acl_filter>s) {
+        bag as relates_to @filter(%<bucket_acl_grant_filter>s) {
+          p as permission
+          g as relates_to @filter(%<grantee_filter>s) {
+            u as uri
+          }
+        }
+      }
+    }
+    query(func: uid(b)) @cascade {
+      %<default_predicates>s
+      relates_to @filter(uid(ba)) {
+        %<default_predicates>s
+        relates_to @filter(uid(bag) AND eq(val(p), "FULL_CONTROL")) {
+          %<default_predicates>s
+          permission
+          relates_to @filter(uid(g) AND eq(val(u), "http://acs.amazonaws.com/groups/global/AllUsers")) {
+            %<default_predicates>s
+            uri
+          }
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                              'bucket' => [],
+                              'bucket_acl' => [],
+                              'bucket_acl_grant' => ['permission'],
+                              'grantee' => ['uri']
+                          })
+end
+
+coreo_aws_rule "s3-allusers-write" do
+  action :define
+  service :s3
+  link "http://kb.cloudcoreo.com/mydoc_s3-allusers-write.html"
+  display_name "All users can write to the affected bucket"
+  description "Bucket has permissions (ACL) which let all users write to the bucket."
+  category "Dataloss"
+  suggested_action "Remove the entry from the bucket permissions that allows everyone to write."
+  level "High"
+  meta_nist_171_id "3.1.3"
+  objectives     ["buckets", "bucket_acl", "bucket_acl"]
+  call_modifiers [{}, {:bucket => "buckets.name"}, {}]
+  audit_objects ["", "object.grants.grantee.uri", "object.grants.permission"]
+  operators     ["", "=~", "=~"]
+  raise_when    ["", /AllUsers/i, /\bwrite\b/i]
+  id_map "modifiers.bucket"
+  meta_rule_query <<~QUERY
+  {
+    b as var(func: %<bucket_filter>s) @cascade {
+      ba as relates_to @filter(%<bucket_acl_filter>s) {
+        bag as relates_to @filter(%<bucket_acl_grant_filter>s) {
+          p as permission
+          g as relates_to @filter(%<grantee_filter>s) {
+            u as uri
+          }
+        }
+      }
+    }
+    query(func: uid(b)) @cascade {
+      %<default_predicates>s
+      relates_to @filter(uid(ba)) {
+        %<default_predicates>s
+        relates_to @filter(uid(bag) AND eq(val(p), "WRITE")) {
+          %<default_predicates>s
+          permission
+          relates_to @filter(uid(g) AND eq(val(u), "http://acs.amazonaws.com/groups/global/AllUsers")) {
+            %<default_predicates>s
+            uri
+          }
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                              'bucket' => [],
+                              'bucket_acl' => [],
+                              'bucket_acl_grant' => ['permission'],
+                              'grantee' => ['uri']
+                          })
+end
+
+coreo_aws_rule "s3-allusers-write-acp" do
+  action :define
+  service :s3
+  link "http://kb.cloudcoreo.com/mydoc_s3-allusers-write-acp.html"
+  display_name "All users can write the bucket ACP / ACL"
+  description "Bucket has permissions (ACP / ACL) which let all users modify the permissions."
+  category "Dataloss"
+  suggested_action "Remove the entry from the bucket permissions that allows everyone to edit permissions."
+  level "High"
+  meta_nist_171_id "3.1.3"
+  objectives     ["buckets", "bucket_acl", "bucket_acl"]
+  call_modifiers [{}, {:bucket => "buckets.name"}, {}]
+  audit_objects ["", "object.grants.grantee.uri", "object.grants.permission"]
+  operators     ["", "=~", "=~"]
+  raise_when    ["", /AllUsers/i, /\bwrite_acp\b/i]
+  id_map "modifiers.bucket"
+  meta_rule_query <<~QUERY
+  {
+    b as var(func: %<bucket_filter>s) @cascade {
+      ba as relates_to @filter(%<bucket_acl_filter>s) {
+        bag as relates_to @filter(%<bucket_acl_grant_filter>s) {
+          p as permission
+          g as relates_to @filter(%<grantee_filter>s) {
+            u as uri
+          }
+        }
+      }
+    }
+    query(func: uid(b)) @cascade {
+      %<default_predicates>s
+      relates_to @filter(uid(ba)) {
+        %<default_predicates>s
+        relates_to @filter(uid(bag) AND eq(val(p), "WRITE_ACP")) {
+          %<default_predicates>s
+          permission
+          relates_to @filter(uid(g) AND eq(val(u), "http://acs.amazonaws.com/groups/global/AllUsers")) {
+            %<default_predicates>s
+            uri
+          }
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                              'bucket' => [],
+                              'bucket_acl' => [],
+                              'bucket_acl_grant' => ['permission'],
+                              'grantee' => ['uri']
+                          })
+end
+
+coreo_aws_rule "s3-authenticatedusers-access" do
+  action :define
+  service :s3
+  link "http://kb.cloudcoreo.com/mydoc_s3-world-open-policy-list.html"
+  display_name "Any Authenticated User has access"
+  description "Bucket policy gives any authenticated user some sort of access to this s3 bucket"
+  category "Security"
+  suggested_action "Remove or modify the bucket policy that enables any authenticated user access."
+  level "High"
+  meta_nist_171_id "3.1.3"
+  objectives     ["buckets", "bucket_policy"]
+  call_modifiers [{}, {:bucket => "buckets.name"}]
+  audit_objects ["", "object.policy"]
+  formulas      ["", "jmespath.Statement[?Effect == 'Allow' && !Condition].Principal"]
+  operators     ["", "=~"]
+  raise_when    ["", /"AWS":\s*"\*"/]
+  id_map "modifiers.bucket"
+end
+
+coreo_aws_rule "s3-authenticatedusers-write" do
+  action :define
+  service :s3
+  link "http://kb.cloudcoreo.com/mydoc_s3-authenticatedusers-write.html"
+  display_name "All authenticated AWS users can write to the affected bucket"
+  description "Bucket has permissions (ACL) which let any AWS users write to the bucket."
+  category "Dataloss"
+  suggested_action "Remove the entry from the bucket permissions that allows 'Any Authenticated AWS User' to write."
+  level "High"
+  meta_nist_171_id "3.1.3"
+  objectives     ["buckets", "bucket_acl", "bucket_acl"]
+  call_modifiers [{}, {:bucket => "buckets.name"}, {}]
+  audit_objects ["", "object.grants.grantee.uri", "object.grants.permission"]
+  operators     ["", "=~", "=~"]
+  raise_when    ["", /AuthenticatedUsers/i, /\bwrite\b/i]
+  id_map "modifiers.bucket"
+  meta_rule_query <<~QUERY
+  {
+    b as var(func: %<bucket_filter>s) @cascade {
+      ba as relates_to @filter(%<bucket_acl_filter>s) {
+        bag as relates_to @filter(%<bucket_acl_grant_filter>s) {
+          p as permission
+          g as relates_to @filter(%<grantee_filter>s) {
+            u as uri
+          }
+        }
+      }
+    }
+    query(func: uid(b)) @cascade {
+      %<default_predicates>s
+      relates_to @filter(uid(ba)) {
+        %<default_predicates>s
+        relates_to @filter(uid(bag) AND eq(val(p), "WRITE")) {
+          %<default_predicates>s
+          permission
+          relates_to @filter(uid(g) AND eq(val(u), "http://acs.amazonaws.com/groups/global/AuthenticatedUsers")) {
+            %<default_predicates>s
+            uri
+          }
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                              'bucket' => [],
+                              'bucket_acl' => [],
+                              'bucket_acl_grant' => ['permission'],
+                              'grantee' => ['uri']
+                          })
+end
+
+coreo_aws_rule "s3-authenticatedusers-write-acp" do
+  action :define
+  service :s3
+  link "http://kb.cloudcoreo.com/mydoc_s3-authenticatedusers-write-acp.html"
+  display_name "All authenticated AWS users can change bucket permissions"
+  description "Bucket has permissions ( ACP / ACL) which let any AWS user modify the permissions."
+  category "Dataloss"
+  suggested_action "Remove the bucket permissions (ACP / ACL) that allows 'Any Authenticated AWS User' to edit permissions."
+  level "High"
+  meta_nist_171_id "3.1.3"
+  objectives     ["buckets", "bucket_acl", "bucket_acl"]
+  call_modifiers [{}, {:bucket => "buckets.name"}, {}]
+  audit_objects ["", "object.grants.grantee.uri", "object.grants.permission"]
+  operators     ["", "=~", "=~"]
+  raise_when    ["", /AuthenticatedUsers/i, /\bwrite_acp\b/i]
+  id_map "modifiers.bucket"
+  meta_rule_query <<~QUERY
+  {
+    b as var(func: %<bucket_filter>s) @cascade {
+      ba as relates_to @filter(%<bucket_acl_filter>s) {
+        bag as relates_to @filter(%<bucket_acl_grant_filter>s) {
+          p as permission
+          g as relates_to @filter(%<grantee_filter>s) {
+            u as uri
+          }
+        }
+      }
+    }
+    query(func: uid(b)) @cascade {
+      %<default_predicates>s
+      relates_to @filter(uid(ba)) {
+        %<default_predicates>s
+        relates_to @filter(uid(bag) AND eq(val(p), "WRITE_ACP")) {
+          %<default_predicates>s
+          permission
+          relates_to @filter(uid(g) AND eq(val(u), "http://acs.amazonaws.com/groups/global/AuthenticatedUsers")) {
+            %<default_predicates>s
+            uri
+          }
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                              'bucket' => [],
+                              'bucket_acl' => [],
+                              'bucket_acl_grant' => ['permission'],
+                              'grantee' => ['uri']
+                          })
+end
+
+coreo_aws_rule "s3-logging-disabled" do
+  action :define
+  service :s3
+  link "http://kb.cloudcoreo.com/mydoc_s3-logging-disabled.html"
+  display_name "S3 bucket logging not enabled"
+  description "S3 bucket logging has not been enabled for the affected resource."
+  category "Audit"
+  suggested_action "Enable logging on your S3 buckets."
+  level "Low"
+  meta_nist_171_id "3.1.2"
+  objectives     ["buckets", "bucket_logging"]
+  call_modifiers [{}, {:bucket => "buckets.name"}]
+  audit_objects ["", ""]
+  operators     ["", "=="]
+  raise_when    ["", nil]
+  id_map "modifiers.bucket"
+  meta_rule_query <<~QUERY
+  {
+    bl as var(func: has(bucket)) @cascade
+    {
+      uid
+      relates_to @filter(has(bucket_logging))
+    }
+    query(func: %<bucket_filter>s) @filter(NOT uid(bl))
+    {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                              'bucket' => [],
+                              'bucket_logging' => []
+                          })
 end
 
 coreo_aws_rule "s3-allusers-read" do
