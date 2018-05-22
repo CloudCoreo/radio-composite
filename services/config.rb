@@ -117,10 +117,19 @@ coreo_aws_rule "rds-short-backup-retention-period" do
   {
     dbs as var(func: %<db_instance_filter>s) {
       brp as backup_retention_period
+      r1 as relates_to {
+        r2 as relates_to @filter(NOT uid(dbs))
+      }
     }
     query(func: uid(dbs)) @filter(lt(val(brp), 30)) {
       %<default_predicates>s
       db_instance_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
     }
   }
   QUERY
@@ -147,10 +156,19 @@ coreo_aws_rule "rds-no-auto-minor-version-upgrade" do
   {
     dbs as var(func: %<db_instance_filter>s) {
       amvu as auto_minor_version_upgrade
+      r1 as relates_to {
+        r2 as relates_to @filter(NOT uid(dbs))
+      }
     }
     query(func: uid(dbs)) @filter(eq(val(amvu), false)) {
       %<default_predicates>s
       db_instance_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
     }
   }
   QUERY
@@ -178,10 +196,19 @@ coreo_aws_rule "rds-db-instance-unencrypted" do
   {
     dbs as var(func: %<db_instance_filter>s) {
       se as storage_encrypted
+      r1 as relates_to {
+        r2 as relates_to @filter(NOT uid(dbs))
+      }
     }
     query(func: uid(dbs)) @filter(eq(val(se), false)) {
       %<default_predicates>s
       db_instance_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
     }
   }
   QUERY
@@ -209,10 +236,19 @@ coreo_aws_rule "rds-db-snapshot-unencrypted" do
   {
     s as var(func: %<db_snapshot_filter>s) {
       e as encrypted
+      r1 as relates_to {
+        r2 as relates_to @filter(NOT uid(s))
+      }
     }
     query(func: uid(s)) @filter(eq(val(e), false)) {
       %<default_predicates>s
       db_snapshot_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
     }
   }
   QUERY
@@ -240,10 +276,19 @@ coreo_aws_rule "rds-db-publicly-accessible" do
   {
     dbs as var(func: %<db_instance_filter>s) {
       pa as publicly_accessible
+      r1 as relates_to {
+        r2 as relates_to @filter(NOT uid(dbs))
+      }
     }
     query(func: uid(dbs)) @filter(eq(val(pa), true)) {
       %<default_predicates>s
       db_instance_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
     }
   }
   QUERY
