@@ -4,6 +4,12 @@ variables:
     type: string
     default:
     description: "Enter a custom report subject name."
+  AUDIT_AWS_S3_ALERT_LIST:
+    description: "Which alerts would you like to check for? Default is all S3 alerts. Choices are s3-inventory,s3-allusers-write,s3-allusers-write-acp,s3-allusers-read,s3-authenticatedusers-write,s3-authenticatedusers-write-acp,s3-authenticatedusers-read,s3-logging-disabled,s3-world-open-policy-delete,s3-world-open-policy-get,s3-world-open-policy-list,s3-world-open-policy-put,s3-world-open-policy-all,s3-only-ip-based-policy,s3-authenticatedusers-access"
+    required: false
+    type: array
+    default:
+       - s3-allusers-read
   AUDIT_AWS_EC2_ALERT_LIST:
     required: false
     type: array
