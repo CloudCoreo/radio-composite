@@ -54,7 +54,14 @@ variables:
       - kms-key-rotates # not_violation cis_id:2.8
       - kms-unused
     description: "Which rules would you like to run? Possible values are kms-inventory kms-key-rotates kms-unused"
-     
+  AUDIT_AWS_CLOUDTRAIL_ALERT_LIST:
+    description: "Which alerts would you like to check for? Default is all Cloudtrail alerts. Possible values are cloudtrail-inventory,cloudtrail-service-disabled,cloudtrail-log-file-validating,cloudtrail-logs-cloudwatch,cloudtrail-no-global-trails, cloudtrail-logs-encrypted"
+    required: false
+    type: array
+    default:
+      - cloudtrail-log-file-validating
+      - cloudtrail-logs-encrypted   
+  
   AUDIT_AWS_REGIONS:
     description: "List of AWS regions to check. Default is all regions. Choices are us-east-1,us-east-2,us-west-1,us-west-2,ca-central-1,ap-south-1,ap-northeast-2,ap-southeast-1,ap-southeast-2,ap-northeast-1,eu-central-1,eu-west-1,eu-west-1,sa-east-1"
     required: true
