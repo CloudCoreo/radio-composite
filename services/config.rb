@@ -999,11 +999,88 @@ coreo_aws_rule "kms-key-rotates" do
   })
 end
 
-
 coreo_aws_rule_runner "advise-kms" do
   action :run
   rules ${AUDIT_AWS_KMS_ALERT_LIST}
   service :kms
+  regions ${AUDIT_AWS_REGIONS}
+  filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
+end
+
+coreo_aws_rule "cloudtrail-logs-encrypted" do
+  action :define
+  service :user
+  category "Audit"
+  link "http://kb.cloudcoreo.com/mydoc_cloudtrail-logs-encrypted.html"
+  display_name "Verify CloudTrail logs are encrypted at rest using KMS CMKs"
+  suggested_action "It is recommended that CloudTrail be configured to use SSE-KMS."
+  description "AWS CloudTrail is a web service that records AWS API calls for an account and makes those logs available to users and resources in accordance with IAM policies. AWS Key Management Service (KMS) is a managed service that helps create and control the encryption keys used to encrypt account data, and uses Hardware Security Modules (HSMs) to protect the security of encryption keys. CloudTrail logs can be configured to leverage server side encryption (SSE) and KMS customer created master keys (CMK) to further protect CloudTrail logs."
+  level "Medium"
+  meta_cis_id "2.7"
+  meta_cis_scored "true"
+  meta_cis_level "2"
+  meta_nist_171_id "3.3.1"
+  objectives [""]
+  audit_objects [""]
+  operators [""]
+  raise_when [true]
+  id_map "static.no_op"
+  meta_rule_query <<~QUERY
+  {
+    encrypted as var(func: has(trail) ) @cascade {
+      name
+      relates_to @filter(NOT has(kms_key))
+    }
+    query(func: uid(encrypted)) {
+      %<default_predicates>s
+    }
+    query(func: has(trail) )@filter(NOT has(relates_to)) @cascade {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                              'trail' => []
+                          })
+end
+        
+coreo_aws_rule "cloudtrail-log-file-validating" do
+  action :define
+  service :cloudtrail
+  link "http://kb.cloudcoreo.com/mydoc_cloudtrail-log-file-validating.html"
+  display_name "Cloudtrail Log File Validation Disabled"
+  description "CloudTrail log file validation is disabled for this trail. It should be enabled"
+  category "Audit"
+  suggested_action "Enable CloudTrail log file validation for this trail."
+  level "Low"
+  meta_cis_id "2.2"
+  meta_cis_scored "true"
+  meta_cis_level "2"
+  meta_nist_171_id "3.3.1"
+  objectives ["trails"]
+  audit_objects ["object.trail_list.log_file_validation_enabled"]
+  operators ["=="]
+  raise_when [false]
+  id_map "stack.current_region"
+  meta_rule_query <<~QUERY
+  {
+    trails as var(func: %<trail_filter>s ) {
+      is_log_validated as log_file_validation_enabled
+    }
+    query(func: uid(trails)) @filter(eq(val(is_log_validated), false)) {
+      %<default_predicates>s
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                              'trail' => ['log_file_validation_enabled']
+                          })
+end
+      
+coreo_aws_rule_runner "advise-cloudtrail" do
+  action :run
+  service :cloudtrail
+  rules(${AUDIT_AWS_CLOUDTRAIL_ALERT_LIST})
   regions ${AUDIT_AWS_REGIONS}
   filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
 end
