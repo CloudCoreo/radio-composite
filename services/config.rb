@@ -97,3 +97,210 @@ coreo_aws_rule_runner "advise-s3" do
   rules (${AUDIT_AWS_S3_ALERT_LIST})
   filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
 end
+
+coreo_aws_rule "rds-short-backup-retention-period" do
+  action :define
+  service :rds
+  link "http://kb.cloudcoreo.com/mydoc_rds-short-backup-retention-period.html"
+  display_name "RDS short backup retention period"
+  description "The affected RDS database has a short backup retention period (less than 30 days)."
+  category "Dataloss"
+  suggested_action "Modify the backup retention period to increase it to greater than 30 days."
+  level "Low"
+  meta_nist_171_id "3.8.9"
+  objectives ["db_instances"]
+  audit_objects ["object.db_instances.backup_retention_period"]
+  operators ["<"]
+  raise_when [30]
+  id_map "object.db_instances.db_instance_identifier"
+  meta_rule_query <<~QUERY
+  {
+    dbs as var(func: %<db_instance_filter>s) {
+      brp as backup_retention_period
+      r1 as relates_to @filter(NOT has(db_snapshot)) {
+        r2 as relates_to @filter(NOT has(db_instance))
+      }
+    }
+    query(func: uid(dbs)) @filter(lt(val(brp), 30)) {
+      %<default_predicates>s
+      db_instance_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+    'db_instance' => ['backup_retention_period']
+  })
+end
+
+coreo_aws_rule "rds-no-auto-minor-version-upgrade" do
+  action :define
+  service :rds
+  link "http://kb.cloudcoreo.com/mydoc_rds-no-auto-minor-version-upgrade.html"
+  display_name "RDS not set to automatically upgrade"
+  description "RDS is not set to automatically upgrade minor versions on your database instance."
+  category "Reliability"
+  suggested_action "Consider whether you would like AWS to automatically upgrade minor versions on your database instance. Modify your settings to allow minor version upgrades if possible."
+  level "High"
+  objectives ["db_instances"]
+  audit_objects ["object.db_instances.auto_minor_version_upgrade"]
+  operators ["=="]
+  raise_when [false]
+  id_map "object.db_instances.db_instance_identifier"
+  meta_rule_query <<~QUERY
+  {
+    dbs as var(func: %<db_instance_filter>s) {
+      amvu as auto_minor_version_upgrade
+      r1 as relates_to @filter(NOT has(db_snapshot)) {
+        r2 as relates_to @filter(NOT has(db_instance))
+      }
+    }
+    query(func: uid(dbs)) @filter(eq(val(amvu), false)) {
+      %<default_predicates>s
+      db_instance_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+    'db_instance' => ['auto_minor_version_upgrade']
+  })
+end
+
+coreo_aws_rule "rds-db-instance-unencrypted" do
+  action :define
+  service :rds
+  link "http://kb.cloudcoreo.com/mydoc_rds-db-snapshot-unencrypted.html"
+  display_name "RDS DB instances are not encrypted"
+  description "The affected RDS DB instance is not encrypted."
+  category "Security"
+  suggested_action "Consider whether the affected RDS DB instance should be encrypted. If not, modify the option which encrypts your RDS DB instance"
+  level "High"
+  meta_nist_171_id "3.13.2"
+  objectives ["db_instances"]
+  audit_objects ["object.db_instances.storage_encrypted"]
+  operators ["=="]
+  raise_when [false]
+  id_map "object.db_instances.db_instance_identifier"
+  meta_rule_query <<~QUERY
+  {
+    dbs as var(func: %<db_instance_filter>s) {
+      se as storage_encrypted
+      r1 as relates_to @filter(NOT has(db_snapshot)) {
+        r2 as relates_to @filter(NOT has(db_instance))
+      }
+    }
+    query(func: uid(dbs)) @filter(eq(val(se), false)) {
+      %<default_predicates>s
+      db_instance_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+    'db_instance' => ['storage_encrypted']
+  })
+end
+
+coreo_aws_rule "rds-db-snapshot-unencrypted" do
+  action :define
+  service :rds
+  link "http://kb.cloudcoreo.com/mydoc_rds-db-snapshot-unencrypted.html"
+  display_name "RDS snapshots are not encrypted"
+  description "The affected RDS snaphsot is not encrypted."
+  category "Security"
+  suggested_action "Consider whether the affected RDS snapshot should be encrypted. If not, modify the option which encrypts your RDS snapshot"
+  level "High"
+  meta_nist_171_id "3.13.2"
+  objectives ["db_snapshots"]
+  audit_objects ["object.db_snapshots.encrypted"]
+  operators ["=="]
+  raise_when [false]
+  id_map "object.db_snapshots.db_snapshot_identifier"
+  meta_rule_query <<~QUERY
+  {
+    s as var(func: %<db_snapshot_filter>s) {
+      e as encrypted
+      r1 as relates_to {
+        r2 as relates_to @filter(NOT has(db_snapshot))
+      }
+    }
+    query(func: uid(s)) @filter(eq(val(e), false)) {
+      %<default_predicates>s
+      db_snapshot_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+    'db_snapshot' => ['encrypted']
+  })
+end
+
+coreo_aws_rule "rds-db-publicly-accessible" do
+  action :define
+  service :rds
+  link "http://kb.cloudcoreo.com/mydoc_rds-db-publicly-accessible.html"
+  display_name "RDS is publicly accessible to the world"
+  description "The affected RDS database is publicly accessible to the world."
+  category "Security"
+  suggested_action "Consider whether the affected RDS database should be publicly accessible to the world. If not, modify the option which enables your RDS database to become publicly accessible."
+  level "High"
+  meta_nist_171_id "3.1.22, 3.13.2"
+  objectives ["db_instances"]
+  audit_objects ["object.db_instances.publicly_accessible"]
+  operators ["=="]
+  raise_when [true]
+  id_map "object.db_instances.db_instance_identifier"
+  meta_rule_query <<~QUERY
+  {
+    dbs as var(func: %<db_instance_filter>s) {
+      pa as publicly_accessible
+      r1 as relates_to @filter(NOT has(db_snapshot)) {
+        r2 as relates_to @filter(NOT has(db_instance))
+      }
+    }
+    query(func: uid(dbs)) @filter(eq(val(pa), true)) {
+      %<default_predicates>s
+      db_instance_identifier
+      relates_to @filter(uid(r1)) {
+        %<default_predicates>s
+        relates_to @filter(uid(r2)) {
+          %<default_predicates>s
+        }
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+    'db_instance' => ['publicly_accessible']
+  })
+end
+
+coreo_aws_rule_runner "advise-rds" do
+  rules ${AUDIT_AWS_RDS_ALERT_LIST}
+  service :rds
+  action :run
+  regions ${AUDIT_AWS_RDS_REGIONS}
+  filter(${FILTERED_OBJECTS}) if ${FILTERED_OBJECTS}
+end
