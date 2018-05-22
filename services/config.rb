@@ -594,6 +594,36 @@ coreo_aws_rule "iam-support-role" do
   })
 end
 
+coreo_aws_rule "iam-unusediamgroup" do
+  action :define
+  service :iam
+  link "http://kb.cloudcoreo.com/mydoc_iam-unusediamgroup.html"
+  display_name "Unused or empty IAM group"
+  description "There is an IAM group defined without any users in it and therefore unused."
+  category "Access"
+  suggested_action "Ensure that groups defined within IAM have active users in them. If the groups don't have active users or are not being used, delete the unused IAM group."
+  level "Low"
+  objectives ["groups", "group"]
+  call_modifiers [{}, {:group_name => "objective[0].groups.group_name"}]
+  formulas ["", "count"]
+  audit_objects ["", "object.users"]
+  operators ["", "=="]
+  raise_when ["", 0]
+  id_map "object.group.group_name"
+  meta_rule_query <<~QUERY
+  {
+    query(func: %<group_filter>s) @cascade { 
+      %<default_predicates>s
+      relates_to @filter(%<user_filter>s AND NOT has(user)) 
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                              'group' => [],
+                              'user' => []
+                          })
+end
+
 coreo_aws_rule_runner "advise-iam" do
   service :iam
   action :run
