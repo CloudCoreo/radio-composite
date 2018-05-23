@@ -29,6 +29,82 @@ coreo_aws_rule "ec2-ip-address-whitelisted" do
     meta_rule_node_triggers ({'security_group' => [], 'ip_permission' => ['ip_ranges']})
 end
 
+coreo_aws_rule "ec2-unrestricted-traffic" do
+  action :define
+  service :ec2
+  link "http://kb.cloudcoreo.com/mydoc_ec2-unrestricted-traffic.html"
+  display_name "Security group allows unrestricted traffic"
+  description "All IP addresses are allowed to access resources in a specific security group."
+  category "Security"
+  suggested_action "Restrict access to the minimum specific set of IP address or ports necessary."
+  level "Low"
+  meta_nist_171_id "3.4.7, 3.4.8"
+  objectives ["security_groups"]
+  audit_objects ["object.security_groups.ip_permissions.ip_ranges.cidr_ip"]
+  operators ["=="]
+  raise_when ["0.0.0.0/0"]
+  id_map "object.security_groups.group_id"
+  # TODO Requires ip_range object
+  meta_rule_query <<~QUERY
+  {
+    sg as var(func: %<security_group_filter>s) @cascade {
+      ip as relates_to @filter(%<ip_permission_filter>s) {
+        range as ip_ranges
+      }
+    }
+    query(func: uid(sg)) @cascade {
+      %<default_predicates>s
+      group_id
+      relates_to @filter(uid(ip) AND eq(val(range), "[{:cidr_ip=>\\\"0.0.0.0/0\\\"}]")) {
+        %<default_predicates>s
+        ip_ranges
+      }
+    }
+  }
+  QUERY
+  meta_rule_node_triggers ({
+                             'security_group' => [],
+                             'ip_permission' => ['ip_ranges']
+                           })
+end
+
+coreo_aws_rule "ec2-vpc-flow-logs" do
+  action :define
+  service :user
+  category "Audit"
+  link "http://kb.cloudcoreo.com/mydoc_ec2-vpc-flow-logs.html"
+  display_name "Ensure VPC flow logging is enabled in all VPCs (Scored)"
+  suggested_action "VPC Flow Logs be enabled for packet 'Rejects' for VPCs."
+  description "VPC Flow Logs is a feature that enables you to capture information about the IP traffic going to and from network interfaces in your VPC. After you've created a flow log, you can view and retrieve its data in Amazon CloudWatch Logs."
+  level "Low"
+  meta_cis_id "4.3"
+  meta_cis_scored "true"
+  meta_cis_level "1"
+  meta_nist_171_id "3.13.1, 3.13.6"
+  objectives [""]
+  audit_objects [""]
+  operators [""]
+  raise_when [true]
+  id_map "static.no_op"
+  meta_rule_query <<~QUERY
+  {
+    v as var(func: %<vpc_filter>s) @cascade {
+      fl relates_to @filter(%<flow_log_filter>s) {
+        fls as flow_log_status
+      }
+    }
+    query(func: has(vpc)) @filter(NOT uid(r)) {
+      %<default_predicates>s
+      relates_to @filter(uid(fl) AND eq(val(fls), "ACTIVE"))
+    }
+  }
+  QUERY
+  meta_rule_node_triggers({
+                            'vpc' => [],
+                            'flow_log' => ['flow_log_status']
+                          })
+end
+
 coreo_aws_rule_runner "advise-ec2" do
   service :ec2
   action :run
