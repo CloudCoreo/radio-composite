@@ -14,19 +14,28 @@ coreo_aws_rule "ec2-ip-address-whitelisted" do
     id_map "object.security_groups.group_id"
     meta_rule_query <<~QUERY
     {
-      ranges as var(func: %<ip_permission_filter>s) @cascade {
-        range as ip_ranges
+      s as var(func: has(security_group)) @cascade {
+        i as relates_to @filter(has(ip_permission)) {
+            range as ip_ranges
+        }
       }
-      query(func: %<security_group_filter>s) @cascade {
+      sg as var(func: uid(s)) @cascade {
+        ip as relates_to @filter((uid(i) AND eq(val(range), "[{:cidr_ip=>\"1.0.0.0/32\"}]")))
+      }
+      query(func: uid(sg)) {
         %<default_predicates>s
         group_id
-        relates_to @filter(uid(ranges) AND eq(val(range), "[{:cidr_ip=>\\\"1.0.0.0/32\\\"}]")) {
+        relates_to @filter(uid(ip) OR NOT has(ip_permission)) {
           %<default_predicates>s
+          ip_ranges
         }
       }
     }
     QUERY
-    meta_rule_node_triggers ({'security_group' => [], 'ip_permission' => ['ip_ranges']})
+    meta_rule_node_triggers ({
+                              'security_group' => [], 
+                              'ip_permission' => ['ip_ranges']
+                            })
 end
 
 coreo_aws_rule "ec2-unrestricted-traffic" do
@@ -47,15 +56,18 @@ coreo_aws_rule "ec2-unrestricted-traffic" do
   # TODO Requires ip_range object
   meta_rule_query <<~QUERY
   {
-    sg as var(func: %<security_group_filter>s) @cascade {
-      ip as relates_to @filter(%<ip_permission_filter>s) {
-        range as ip_ranges
+    s as var(func: has(security_group)) @cascade {
+      i as relates_to @filter(has(ip_permission)) {
+          range as ip_ranges
       }
     }
-    query(func: uid(sg)) @cascade {
+    sg as var(func: uid(s)) @cascade {
+      ip as relates_to @filter((uid(i) AND eq(val(range), "[{:cidr_ip=>\"0.0.0.0/0\"}]")))
+    }
+    query(func: uid(sg)) {
       %<default_predicates>s
       group_id
-      relates_to @filter(uid(ip) AND eq(val(range), "[{:cidr_ip=>\\\"0.0.0.0/0\\\"}]")) {
+      relates_to @filter(uid(ip) OR NOT has(ip_permission)) {
         %<default_predicates>s
         ip_ranges
       }
@@ -88,14 +100,19 @@ coreo_aws_rule "ec2-vpc-flow-logs" do
   id_map "static.no_op"
   meta_rule_query <<~QUERY
   {
-    v as var(func: %<vpc_filter>s) @cascade {
-      fl relates_to @filter(%<flow_log_filter>s) {
+    vpcs as var(func: %<vpc_filter>s) @cascade {
+      fl as relates_to @filter(%<flow_log_filter>s) {
         fls as flow_log_status
       }
     }
-    query(func: has(vpc)) @filter(NOT uid(r)) {
-      %<default_predicates>s
+    v as var(func: uid(vpcs)) @cascade {
       relates_to @filter(uid(fl) AND eq(val(fls), "ACTIVE"))
+    }
+    query(func: has(vpc)) @filter(NOT uid(v)) {
+      %<default_predicates>s
+      relates_to @filter(NOT has(flow_log)) {
+        %<default_predicates>s
+      }
     }
   }
   QUERY
