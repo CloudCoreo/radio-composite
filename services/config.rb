@@ -1705,7 +1705,7 @@ coreo_aws_rule "iam-omnipotent-policy" do
   }
 }
   QUERY
-  meta_rule_node_triggers ('internet_gateway' => ['relates_to'], 'route_table' => [], 'route_table_association' => [], 'instance' => ['state', 'public_ip_address'], 'iam_instance_profile' => [], 'role' => [] })
+  meta_rule_node_triggers ({'internet_gateway' => ['relates_to'], 'route_table' => [], 'route_table_association' => [], 'instance' => ['state', 'public_ip_address'], 'iam_instance_profile' => [], 'role' => [] })
 
 end
 
