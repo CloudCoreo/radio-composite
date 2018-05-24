@@ -1672,7 +1672,7 @@ coreo_aws_rule "iam-omnipotent-policy" do
           name:label
           relates_to @filter(has(subnet)) {
             name:label
-            relates_to @filter(has(instance) and eq(val(evil_instance_state),"{:code=>16, :name=>\"running\"}")) {
+            relates_to @filter(has(instance) and eq(val(evil_instance_state),"{:code=>16, :name=>\\\"running\\\"}")) {
               name:instance_id
               state
               createdAt
@@ -1680,7 +1680,7 @@ coreo_aws_rule "iam-omnipotent-policy" do
               relates_to @filter(uid(exposed_keys)){
                 name:key_name
                 teamId
-                relates_to @filter(has(instance) and eq(val(innocent_instance_state),"{:code=>16, :name=>\"running\"}")){
+                relates_to @filter(has(instance) and eq(val(innocent_instance_state),"{:code=>16, :name=>\\\"running\\\"}")){
                   name:instance_id
                   state
                   createdAt
