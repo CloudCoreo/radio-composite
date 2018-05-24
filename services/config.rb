@@ -1636,19 +1636,19 @@ coreo_aws_rule "iam-omnipotent-policy" do
   id_map "static.no_op"
   meta_rule_query <<~QUERY
 {
-  gateways as var(func: has(%<internet_gateway>s))  @cascade {
-      relates_to @filter(has(%<route>s)) {
-        relates_to @filter(has(%<route_table>s)) {
-          relates_to @filter(has(%<route_table_association>s)) {
+  gateways as var(func: %<internet_gateway>s)  @cascade {
+      relates_to @filter(%<route>s) {
+        relates_to @filter(%<route_table>s) {
+          relates_to @filter(%<route_table_association>s) {
             relates_to @filter(has(subnet)) {
-              relates_to @filter(has(%<instance>s) AND has(public_ip_address)) {
+              relates_to @filter(%<instance>s AND has(public_ip_address)) {
                 evil_instance_state as state
                 relates_to @filter(has(key_pair)){
                   exposed_keys as uid
-                  relates_to @filter(has(%<instance>s)){
+                  relates_to @filter(%<instance>s){
                     innocent_instance_state as state
-                    relates_to @filter(has(%<iam_instance_profile>s)){
-                      relates_to @filter(has(%<role>s)){
+                    relates_to @filter(%<iam_instance_profile>s){
+                      relates_to @filter(%<role>s){
                         relates_to @filter(has(policy) AND has(is_admin_policy)){
                           exposed_policies as uid
                         }
