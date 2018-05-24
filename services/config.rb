@@ -11,6 +11,7 @@ coreo_aws_rule "administrative-policy-exposed-by-connected-ssh-credential" do
   audit_objects ["object.reservations.instances.instance_id"]
   operators ["=~"]
   raise_when [//]
+  id_map "object.reservations.instances.instance_id"
   meta_rule_query <<~QUERY
 {
   gateways as var(func: %<internet_gateway_filter>s)  @cascade {
