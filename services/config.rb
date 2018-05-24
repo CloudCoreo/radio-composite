@@ -53,7 +53,6 @@ coreo_aws_rule "ec2-unrestricted-traffic" do
   operators ["=="]
   raise_when ["0.0.0.0/0"]
   id_map "object.security_groups.group_id"
-  # TODO Requires ip_range object
   meta_rule_query <<~QUERY
   {
     s as var(func: has(security_group)) @cascade {
