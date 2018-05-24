@@ -20,7 +20,7 @@ coreo_aws_rule "ec2-ip-address-whitelisted" do
         }
       }
       sg as var(func: uid(s)) @cascade {
-        ip as relates_to @filter((uid(i) AND eq(val(range), "[{:cidr_ip=>\"1.0.0.0/32\"}]")))
+        ip as relates_to @filter((uid(i) AND eq(val(range), "[{:cidr_ip=>\\\"1.0.0.0/32\\\"}]")))
       }
       query(func: uid(sg)) {
         %<default_predicates>s
@@ -61,7 +61,7 @@ coreo_aws_rule "ec2-unrestricted-traffic" do
       }
     }
     sg as var(func: uid(s)) @cascade {
-      ip as relates_to @filter((uid(i) AND eq(val(range), "[{:cidr_ip=>\"0.0.0.0/0\"}]")))
+      ip as relates_to @filter((uid(i) AND eq(val(range), "[{:cidr_ip=>\\\"0.0.0.0/0\\\"}]")))
     }
     query(func: uid(sg)) {
       %<default_predicates>s
