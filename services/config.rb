@@ -2383,12 +2383,11 @@ coreo_aws_rule "cloudtrail-logs-encrypted" do
   # TODO: followup, query likely broken
   meta_rule_query <<~QUERY
   {
-    relation as var(func: has(trail)) @cascade {
-      relates_to @filter(NOT has(kms_key))
+    logged_trails as var(func: has(trail))  @cascade{
+      relates_to @filter(has(kms_key)) { }
     }
-    no_relation as var(func: has(trail))@filter(NOT has(relates_to)) { }
-    query(func: uid(relation, no_relation)) {
-      objectId location label service
+    query(func: %<trail_filter>s) @filter( NOT uid(logged_trails) ) {
+      %<default_predicates>s
     }
   }
   QUERY
