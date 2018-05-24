@@ -1636,19 +1636,19 @@ coreo_aws_rule "iam-omnipotent-policy" do
   id_map "static.no_op"
   meta_rule_query <<~QUERY
 {
-  gateways as var(func: %<internet_gateway>s)  @cascade {
-      relates_to @filter(%<route>s) {
-        relates_to @filter(%<route_table>s) {
-          relates_to @filter(%<route_table_association>s) {
+  gateways as var(func: %<internet_gateway_filter>s)  @cascade {
+      relates_to @filter(%<route_filter>s) {
+        relates_to @filter(%<route_table_filter>s) {
+          relates_to @filter(%<route_table_association_filter>s) {
             relates_to @filter(has(subnet)) {
-              relates_to @filter(%<instance>s AND has(public_ip_address)) {
+              relates_to @filter(%<instance_filter>s AND has(public_ip_address)) {
                 evil_instance_state as state
                 relates_to @filter(has(key_pair)){
                   exposed_keys as uid
-                  relates_to @filter(%<instance>s){
+                  relates_to @filter(%<instance_filter>s){
                     innocent_instance_state as state
-                    relates_to @filter(%<iam_instance_profile>s){
-                      relates_to @filter(%<role>s){
+                    relates_to @filter(%<iam_instance_profile_filter>s){
+                      relates_to @filter(%<role_filter>s){
                         relates_to @filter(has(policy) AND has(is_admin_policy)){
                           exposed_policies as uid
                         }
@@ -1705,7 +1705,7 @@ coreo_aws_rule "iam-omnipotent-policy" do
   }
 }
   QUERY
-  meta_rule_node_triggers ({'internet_gateway' => ['relates_to'], 'route' => [], 'route_table' => [], 'route_table_association' => [], 'instance' => ['state', 'public_ip_address'], 'iam_instance_profile' => [], 'role' => [] })
+  meta_rule_node_triggers ({'internet_gateway' => ['relates_to'], 'route' => [], 'route_table' => [], 'route_table_association' => [], 'instance' => [], 'iam_instance_profile' => [], 'role' => [] })
 
 end
 
