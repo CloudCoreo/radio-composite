@@ -1641,7 +1641,7 @@ coreo_aws_rule "iam-omnipotent-policy" do
         relates_to @filter(%<route_table_filter>s) {
           relates_to @filter(%<route_table_association_filter>s) {
             relates_to @filter(has(subnet)) {
-              relates_to @filter(%<instance_filter>s AND has(public_ip_address)) {
+              relates_to @filter(has(instance) AND has(public_ip_address)) {
                 evil_instance_state as state
                 relates_to @filter(has(key_pair)){
                   exposed_keys as uid
