@@ -42,6 +42,7 @@ coreo_aws_rule "administrative-policy-exposed-by-connected-ssh-credential" do
     }
   }
   query(func: uid(gateways)) @cascade {
+    %<default_predicates>s
     relates_to @filter(has(route)) {
       %<default_predicates>s
       relates_to @filter(has(route_table)) {
