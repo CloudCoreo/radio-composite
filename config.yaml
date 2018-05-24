@@ -55,6 +55,11 @@ variables:
     required: false
     type: string
     default:
+  AUDIT_AWS_IAM_ALERT_RECIPIENT:
+    description: "Enter the email address(es) that will receive notifications. If more than one, separate each with a comma."
+    required: false
+    type: string
+    default:
   AUDIT_AWS_KMS_ALERT_LIST:
     required: false
     type: array
