@@ -43,26 +43,25 @@ coreo_aws_rule "administrative-policy-exposed-by-connected-ssh-credential" do
   }
   query(func: uid(gateways)) @cascade {
     relates_to @filter(has(route)) {
-       %<default_predicates>s
+      %<default_predicates>s
       relates_to @filter(has(route_table)) {
-         %<default_predicates>s
+        %<default_predicates>s
         relates_to @filter(has(route_table_association)) {
-           %<default_predicates>s
+          %<default_predicates>s
           relates_to @filter(has(subnet)) {
-             %<default_predicates>s
+            %<default_predicates>s
             relates_to @filter(has(instance) and eq(val(evil_instance_state),"{:code=>16, :name=>\\\"running\\\"}")) {
-               %<default_predicates>s
+              %<default_predicates>s
               relates_to @filter(uid(exposed_keys)){
-                %<default_predicates>s
+               %<default_predicates>s
                 relates_to @filter(has(instance) and eq(val(innocent_instance_state),"{:code=>16, :name=>\\\"running\\\"}")){
-                  name:instance_id
-                   %<default_predicates>s
+                  %<default_predicates>s
                   relates_to @filter(has(iam_instance_profile)){
-                     %<default_predicates>s
+                    %<default_predicates>s
                     relates_to @filter(has(role)){
-                       %<default_predicates>s
+                      %<default_predicates>s
                       relates_to @filter(uid(exposed_policies)){
-                         %<default_predicates>s
+                        %<default_predicates>s
                       }
                     }
                   }
