@@ -64,7 +64,11 @@ variables:
     default:
       - cloudtrail-log-file-validating
       - cloudtrail-logs-encrypted   
-  
+  AUDIT_AWS_IAM_DAYS_PASSWORD_UNUSED:
+    description: "Number of days for which password has not been used"
+    required: true
+    type: string
+    default: "30"
   AUDIT_AWS_REGIONS:
     description: "List of AWS regions to check. Default is all regions. Choices are us-east-1,us-east-2,us-west-1,us-west-2,ca-central-1,ap-south-1,ap-northeast-2,ap-southeast-1,ap-southeast-2,ap-northeast-1,eu-central-1,eu-west-1,eu-west-1,sa-east-1"
     required: true
