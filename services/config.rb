@@ -1663,7 +1663,7 @@ coreo_aws_rule "iam-omnipotent-policy" do
       
     }
   }
-  violations(func: uid(gateways)) @cascade {
+  query(func: uid(gateways)) @cascade {
     relates_to @filter(has(route)) {
       name:label
       relates_to @filter(has(route_table)) {
