@@ -427,14 +427,14 @@ coreo_aws_rule "s3-logging-disabled" do
   id_map "modifiers.bucket"
   meta_rule_query <<~QUERY
   {
-    bl as var(func: has(bucket)) @cascade
-    {
-      uid
+    b as var(func: has(bucket)) @cascade {
       relates_to @filter(has(bucket_logging))
     }
-    query(func: %<bucket_filter>s) @filter(NOT uid(bl))
-    {
+    query(func: %<bucket_filter>s) @filter(NOT uid(b)) {
       %<default_predicates>s
+      relates_to @filter(NOT has(bucket_policy)) {
+        %<default_predicates>s
+      }
     }
   }
   QUERY
@@ -785,20 +785,15 @@ coreo_aws_rule "iam-passwordreuseprevention" do
   id_map "static.password_policy"
   meta_rule_query <<~QUERY
   { 
-    pp as var(func: has(password_policy)) @filter(NOT has(password_reuse_prevention)) { 
-    }
-  
-    np as var(func: has(password_policy)) @filter( has(password_reuse_prevention)) { 
+    pp as var(func: %<password_policy_filter>s) @filter(NOT has(password_reuse_prevention)) { }
+    np as var(func: %<password_policy_filter>s) @cascade { 
        prp as password_reuse_prevention
     } 
-      
-    ap as var(func: uid(np)) @filter(eq(val(prp), false)) {
-    }
-        
-    query(func: uid(ap, pp)){
+    ap as var(func: uid(np)) @filter(eq(val(prp), false)) { }   
+    query(func: uid(ap, pp)) {
       %<default_predicates>s
+      password_reuse_prevention
     }
-      
   }
   QUERY
   meta_rule_node_triggers ({
@@ -823,6 +818,7 @@ coreo_aws_rule "iam-expirepasswords" do
   operators ["=="]
   raise_when ["false"]
   id_map "static.password_policy"
+  # TODO: followup
   meta_rule_query <<~QUERY
   {
     pp as var(func: %<password_policy_filter>s ) {
@@ -856,6 +852,7 @@ coreo_aws_rule "iam-password-policy-uppercase" do
   audit_objects ["object.password_policy.require_uppercase_characters"]
   operators ["=="]
   raise_when [false]
+  # TODO: followup
   meta_rule_query <<~QUERY
   {
     pp as var(func: %<password_policy_filter>s ) {
@@ -889,6 +886,7 @@ coreo_aws_rule "iam-password-policy-lowercase" do
   audit_objects ["object.password_policy.require_lowercase_characters"]
   operators ["=="]
   raise_when [false]
+  # TODO: followup
   meta_rule_query <<~QUERY
   {
     pp as var(func: %<password_policy_filter>s ) {
@@ -922,6 +920,7 @@ coreo_aws_rule "iam-password-policy-symbol" do
   audit_objects ["object.password_policy.require_symbols"]
   operators ["=="]
   raise_when [false]
+  # TODO: followup
   meta_rule_query <<~QUERY
   {
     pp as var(func: %<password_policy_filter>s ) {
@@ -955,6 +954,7 @@ coreo_aws_rule "iam-password-policy-number" do
   audit_objects ["object.password_policy.require_numbers"]
   operators ["=="]
   raise_when [false]
+  # TODO: followup
   meta_rule_query <<~QUERY
   {
     pp as var(func: %<password_policy_filter>s ) {
@@ -988,6 +988,7 @@ coreo_aws_rule "iam-password-policy-min-length" do
   audit_objects ["object.password_policy.minimum_password_length"]
   operators ["<"]
   raise_when [14]
+  # TODO: followup
   meta_rule_query <<~QUERY
   {
     pp as var(func: %<password_policy_filter>s ) {
@@ -1021,13 +1022,14 @@ coreo_aws_rule "iam-support-role" do
   operators ["==", ">"]
   raise_when ["AWSSupportAccess", 0]
   id_map "object.policies.policy_name"
+  # TODO: followup
   meta_rule_query <<~QUERY
   {
-    pf as var(func: %<policy_filter>s ) {
+    pf as var(func: %<policy_filter>s ) @cascade {
       pfa as attachment_count
       pfn as policy_name
     }
-    query(func: uid(pf)) @filter( gt( val(pfa), 0) AND eq(val(pfn), AWSSupportAccess") ) {
+    query(func: uid(pf)) @filter( gt( val(pfa), 0) AND eq(val(pfn), "AWSSupportAccess") ) {
       %<default_predicates>s
     }
   }
@@ -1053,6 +1055,7 @@ coreo_aws_rule "iam-unusediamgroup" do
   operators ["", "=="]
   raise_when ["", 0]
   id_map "object.group.group_name"
+  # TODO: followup
   meta_rule_query <<~QUERY
   {
     query(func: %<group_filter>s) @cascade { 
@@ -1122,6 +1125,7 @@ coreo_aws_rule "kms-key-rotates" do
   operators ["", "=="]
   raise_when ["", false]
   id_map "modifiers.key_id"
+  # TODO: wrong query, need to fix
   meta_rule_query <<~QUERY
   { 
     keys as var(func: %<key_filter>s) @cascade {         
@@ -1129,13 +1133,12 @@ coreo_aws_rule "kms-key-rotates" do
         kre as key_rotation_enabled
       }
     }
-    
     query(func: uid(keys)) @cascade {
       %<default_predicates>s
       relates_to @filter(uid(keys_rotation) AND eq(val(kre), false) ) {
         %<default_predicates>s
       }
-    }    
+    }
   }
   QUERY
   meta_rule_node_triggers ({
@@ -1170,17 +1173,15 @@ coreo_aws_rule "cloudtrail-logs-encrypted" do
   operators [""]
   raise_when [true]
   id_map "static.no_op"
+  # TODO: followup, query likely broken
   meta_rule_query <<~QUERY
   {
-    encrypted as var(func: has(trail) ) @cascade {
-      name
+    relation as var(func: has(trail)) @cascade {
       relates_to @filter(NOT has(kms_key))
     }
-    query(func: uid(encrypted)) {
-      %<default_predicates>s
-    }
-    query(func: has(trail) )@filter(NOT has(relates_to)) @cascade {
-      %<default_predicates>s
+    no_relation as var(func: has(trail))@filter(NOT has(relates_to)) { }
+    query(func: uid(relation, no_relation)) {
+      objectId location label service
     }
   }
   QUERY
@@ -1209,7 +1210,7 @@ coreo_aws_rule "cloudtrail-log-file-validating" do
   id_map "stack.current_region"
   meta_rule_query <<~QUERY
   {
-    trails as var(func: %<trail_filter>s ) {
+    trails as var(func: %<trail_filter>s) @cascade {
       is_log_validated as log_file_validation_enabled
     }
     query(func: uid(trails)) @filter(eq(val(is_log_validated), false)) {
