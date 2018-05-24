@@ -1637,7 +1637,7 @@ coreo_aws_rule "iam-omnipotent-policy" do
   meta_rule_query <<~QUERY
 {
   gateways as var(func: has(%<internet_gateway>s))  @cascade {
-      relates_to @filter(has(route)) {
+      relates_to @filter(has(%<route>s)) {
         relates_to @filter(has(%<route_table>s)) {
           relates_to @filter(has(%<route_table_association>s)) {
             relates_to @filter(has(subnet)) {
@@ -1705,7 +1705,7 @@ coreo_aws_rule "iam-omnipotent-policy" do
   }
 }
   QUERY
-  meta_rule_node_triggers ({'internet_gateway' => ['relates_to'], 'route_table' => [], 'route_table_association' => [], 'instance' => ['state', 'public_ip_address'], 'iam_instance_profile' => [], 'role' => [] })
+  meta_rule_node_triggers ({'internet_gateway' => ['relates_to'], 'route' => [], 'route_table' => [], 'route_table_association' => [], 'instance' => ['state', 'public_ip_address'], 'iam_instance_profile' => [], 'role' => [] })
 
 end
 
