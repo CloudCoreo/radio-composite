@@ -7,11 +7,11 @@ coreo_aws_rule "administrative-policy-exposed-by-connected-ssh-credential" do
   category "Security"
   suggested_action "Generate distinct ssh keys per subnet or ec2 instance role."
   level "High"
-  objectives ["instances"]
-  audit_objects ["object.reservations.instances.instance_id"]
+  objectives ["describe_internet_gateways"]
+  audit_objects ["object.internet_gateways.internet_gateway_id"]
   operators ["=~"]
   raise_when [//]
-  id_map "object.reservations.instances.instance_id"
+  id_map ["object.internet_gateways.internet_gateway_id"]
   meta_rule_query <<~QUERY
 {
   gateways as var(func: %<internet_gateway_filter>s)  @cascade {
