@@ -95,8 +95,8 @@ coreo_aws_rule "ec2-ip-address-whitelisted" do
     id_map "object.security_groups.group_id"
     meta_rule_query <<~QUERY
     {
-      s as var(func: has(security_group)) @cascade {
-        i as relates_to @filter(has(ip_permission)) {
+      s as var(func: %<security_group_filter>s) @cascade {
+        i as relates_to @filter(%<ip_permission_filter>s) {
             range as ip_ranges
         }
       }
@@ -136,8 +136,8 @@ coreo_aws_rule "ec2-unrestricted-traffic" do
   id_map "object.security_groups.group_id"
   meta_rule_query <<~QUERY
   {
-    s as var(func: has(security_group)) @cascade {
-      i as relates_to @filter(has(ip_permission)) {
+    s as var(func: %<security_group_filter>s) @cascade {
+      i as relates_to @filter(%<ip_permission_filter>s) {
           range as ip_ranges
       }
     }
@@ -1048,16 +1048,12 @@ coreo_aws_rule "iam-passwordreuseprevention" do
   id_map "static.password_policy"
   meta_rule_query <<~QUERY
   { 
-    pp as var(func: has(password_policy)) @filter(NOT has(password_reuse_prevention)) { 
-    }
-  
-    np as var(func: has(password_policy)) @filter( has(password_reuse_prevention)) { 
+    pp as var(func: %<password_policy_filter>s) @filter(NOT has(password_reuse_prevention)) { }
+    np as var(func: %<password_policy_filter>s) @filter(has(password_reuse_prevention)) { 
        prp as password_reuse_prevention
     } 
-      
-    ap as var(func: uid(np)) @filter(eq(val(prp), false)) {
-    }
-        
+    ap as var(func: uid(np)) @filter(eq(val(prp), false)) { }
+    
     query(func: uid(ap, pp)){
       %<default_predicates>s
     }
@@ -2099,6 +2095,7 @@ function checkIsFullAdmin(user) {
     }
 RUBY
 end
+      
 coreo_uni_util_variables "iam-update-user-is-admin" do
   action (${AUDIT_AWS_IAM_ALERT_LIST}.include?('iam-user-is-admin') ? :set : :nothing)
   variables([
@@ -2107,6 +2104,7 @@ coreo_uni_util_variables "iam-update-user-is-admin" do
                 {'GLOBAL::number_violations' => 'COMPOSITE::coreo_aws_rule_runner.advise-iam.number_violations'},
             ])
 end
+  
 coreo_uni_util_jsrunner "cis-iam" do
   action :run
   data_type "json"
@@ -2286,6 +2284,7 @@ coreoExport('report', report);
 callback(violations);
   EOH
 end
+
 coreo_uni_util_variables "iam-update-planwide-4" do
   action :set
   variables([
@@ -2293,6 +2292,7 @@ coreo_uni_util_variables "iam-update-planwide-4" do
                 {'COMPOSITE::coreo_aws_rule_runner.advise-iam.report' => 'COMPOSITE::coreo_uni_util_jsrunner.cis-iam.report'},
             ])
 end
+
 coreo_aws_rule "kms-unused" do
   action(${AUDIT_AWS_KMS_ALERT_LIST}.include?("kms-unused") ? :define : :nothing)
   service :user
