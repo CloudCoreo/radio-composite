@@ -10,7 +10,6 @@ variables:
     type: array
     default:
        - s3-allusers-read
-       - s3-logging-disabled
        - s3-authenticatedusers-read
        - s3-authenticatedusers-write-acp
        - s3-authenticatedusers-write
