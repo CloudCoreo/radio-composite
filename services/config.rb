@@ -470,41 +470,6 @@ coreo_aws_rule "s3-authenticatedusers-write-acp" do
                           })
 end
 
-coreo_aws_rule "s3-logging-disabled" do
-  action :define
-  service :s3
-  link "http://kb.cloudcoreo.com/mydoc_s3-logging-disabled.html"
-  display_name "S3 bucket logging not enabled"
-  description "S3 bucket logging has not been enabled for the affected resource."
-  category "Audit"
-  suggested_action "Enable logging on your S3 buckets."
-  level "Low"
-  meta_nist_171_id "3.1.2"
-  objectives     ["buckets", "bucket_logging"]
-  call_modifiers [{}, {:bucket => "buckets.name"}]
-  audit_objects ["", ""]
-  operators     ["", "=="]
-  raise_when    ["", nil]
-  id_map "modifiers.bucket"
-  meta_rule_query <<~QUERY
-  {
-    b as var(func: has(bucket)) @cascade {
-      relates_to @filter(has(bucket_logging))
-    }
-    query(func: %<bucket_filter>s) @filter(NOT uid(b)) {
-      %<default_predicates>s
-      relates_to @filter(NOT has(bucket_policy)) {
-        %<default_predicates>s
-      }
-    }
-  }
-  QUERY
-  meta_rule_node_triggers({
-                              'bucket' => [],
-                              'bucket_logging' => []
-                          })
-end
-
 coreo_aws_rule "s3-authenticatedusers-read" do
   action :define
   service :s3
